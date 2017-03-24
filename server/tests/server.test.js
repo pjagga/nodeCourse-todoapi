@@ -4,8 +4,17 @@ const request = require('supertest');
 var {app} = require('./../server');
 const {Todo} = require('./../models/todo');
 
+const todos = [{
+  text: 'First Test to do'
+},
+  {
+    text: 'Second Test to do'
+  }];
+
 beforeEach((done) => {
-  Todo.remove({}).then(() => done());
+  Todo.remove({}).then(() => {
+    return Todo.insertMany(todos)
+  }).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -24,7 +33,7 @@ describe('POST /todos', () => {
         if (err) {
           return done(err);
         }
-        Todo.find().then((todos) => {
+        Todo.find({text}).then((todos) => {
           expect(todos.length).toBe(1);
           expect(todos[0].text).toBe(text);
           done()
@@ -35,17 +44,30 @@ describe('POST /todos', () => {
   it('should return 400 bad request', (done) => {
     request(app)
       .post('/todos')
-      .send({
-      })
+      .send({})
       .expect(400)
       .end((err, res) => {
         if (err) {
           return done(err);
         }
         Todo.find().then((todos) => {
-          expect(todos.length).toBe(0);
+          expect(todos.length).toBe(2);
           done()
         }).catch((e) => done(e));
       })
+  })
+});
+
+
+describe('GET /todos', () => {
+  it('it should get all the todos', (done) => {
+    request(app)
+      .get('/todos')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todos.length).toBe(2);
+      })
+      .end(done());
+
   })
 });
